@@ -1,0 +1,28 @@
+{
+  "name": "<service>-cucumber",
+  "version": "0.0.1",
+  "license": "UNLICENSED",
+  "author": {
+    "name": "Paul Nebel",
+    "email": "paulne@redjamjar.net"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://bitbucket.org/harryjam/<service>"
+  },
+  "description": "Tests for <service>",
+  "scripts": {
+    "test": "cucumber.js"
+  },
+  "engines": {
+    "node": ">=0.12.0"
+  },
+  "devDependencies": {
+    "chai": "^1.10.0"
+  },
+  "dependencies": {
+    "q": "^1.4.1",
+    "request": "^2.69.0",
+    "util": "^0.10.3"
+  }
+}

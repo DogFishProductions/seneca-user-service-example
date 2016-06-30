@@ -1,0 +1,43 @@
+client:
+ image: paulne/node_microservice
+ links:
+  - server
+ volumes:
+  - $PWD/src:/home/redjam/src
+ command: bash -c "cd /home/redjam/src && npm install && nodemon -L ./test/test-client.js"
+
+server:
+ image: paulne/node_microservice
+ links:
+  - neo4j
+ volumes:
+  - $PWD/src:/home/redjam/src
+ command: bash -c "cd /home/redjam/src && npm install && nodemon -L ./user-service.js"
+
+neo4j:
+ build: .
+ dockerfile: neo4j-Dockerfile
+ ports: 
+  - "7474:7474"
+  - "7473:7473"
+  - "7687:7687"
+ environment:
+  - NEO4J_AUTH=neo4j/Paul~J4m
+
+debug:
+ image: paulne/node_microservice
+ ports:
+  - "9080:9080"
+  - "5858:5858"
+ links:
+  - neo4j
+ volumes:
+  - $PWD/lib:/home/redjam/src
+ command: bash -c "cd /home/redjam/src && npm install && nodemon -L --debug-brk ./user-service.js"
+
+debugger:
+ build: .
+ dockerfile: debug-Dockerfile
+ net: host
+ volumes_from:
+  - debug

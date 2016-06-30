@@ -1,0 +1,12 @@
+# Version: 0.0.1
+
+FROM neo4j:3.0.2
+
+MAINTAINER Paul Nebel "paul.nebel@redjamjar.net"
+ENV REFRESHED_AT 2016_05_13
+LABEL name="Base image for neo4j with GraphAware TimeTree"
+LABEL version="1.0"
+
+RUN curl http://products.graphaware.com/download/timetree/graphaware-timetree-3.0.1.38.24.jar -o /var/lib/neo4j/plugins/graphaware-timetree-3.0.1.38.24.jar
+RUN curl http://products.graphaware.com/download/framework-server-community/graphaware-server-community-all-3.0.1.38.jar -o /var/lib/neo4j/plugins/graphaware-server-community-all-3.0.1.38.jar
+RUN echo "dbms.unmanaged_extension_classes=com.graphaware.server=/graphaware" >> /var/lib/neo4j/conf/neo4j.conf
