@@ -47,9 +47,9 @@ var _addEntityToTimeline = function (options) {
   if (_ent) {
     // Don't forget to deal with timezones here - it's UTC unless you set it to something different...
     var _time = (options.time ? Date.parse(options.time) : Date.now)
-    var _res = options.resolution || "Second"
-    var _tz = options.timezone || "UTC"
-    var _type = options.relationshipType || "RELATIONSHIP"
+    var _res = options.resolution || 'Second'
+    var _tz = options.timezone || 'UTC'
+    var _type = options.relationshipType || 'RELATIONSHIP'
     _ent.native$(function (err, dbinst) {
       if (err) {
         _si.log.error(_actionRole + ' add login to timetree failed.', err)
@@ -63,7 +63,7 @@ var _addEntityToTimeline = function (options) {
         'timezone': _tz,
         'relationshipType': _type
       })
-      _promisify(dbinst, "query", { cypher: _cypher })
+      _promisify(dbinst, 'query', { cypher: _cypher })
       .done(
         function (results){
           _deferred.resolve(results)
@@ -76,7 +76,7 @@ var _addEntityToTimeline = function (options) {
     })
   }
   else {
-    _deferred.reject(new Error("No entity supplied"))
+    _deferred.reject(new Error('No entity supplied'))
   }
   return _deferred.promise
 }
@@ -102,9 +102,9 @@ _si.ready(function (err, response) {
   }
 
   var _realm = _si.make$('-/sys/realm')
-  _realm.scope = "UK"
+  _realm.scope = 'UK'
   // only create a realm if it doesn't already exist...
-  // list, not load, as we don't know it's id yet...
+  // list, not load, as we don't know its id yet...
   _promisify(_realm, 'list$', { scope: 'UK' })
   .then(function (existing_realms) {
     if (_.isEmpty(existing_realms)) {
@@ -119,56 +119,56 @@ _si.ready(function (err, response) {
       _realm = _.castArray(realms)[0]
     },
     function (err) {
-      return _si.log.error(_actionRole + ' Error retrieving realm.', err)
+      _si.log.error(_actionRole + ' Error retrieving realm.', err)
     }
   )
 
   _si.add({ role: _actionRole, cmd: 'register' }, function (args, next) {
     console.log("###### register")
     // this calls the original action, as provided by the user plugin 
-      _promisify(this, 'prior', args)
-      .done(
-        function (registration) {
-          var _realmId
-          if (_realm) {
-            _realmId = _realm.id
-          } 
-          if (registration.ok && _realmId) {
-            var _user = registration.user
-            var _userId = _user.id
-            var _rel = {
-              relatedNodeLabel: 'user',
-              type: 'HAS_USER',
-              data: {
-                active: _user.active
-              }
+    _promisify(this, 'prior', args)
+    .done(
+      function (registration) {
+        var _realmId
+        if (_realm) {
+          _realmId = _realm.id
+        } 
+        if (registration.ok && _realmId) {
+          var _user = registration.user
+          var _userId = _user.id
+          var _rel = {
+            relatedNodeLabel: 'user',
+            type: 'HAS_USER',
+            data: {
+              active: _user.active
             }
-            _promisify(_realm, 'saveRelationship$', { relationship$: _rel, id: _userId })
-            .then(function (relationship) {
-              return _addEntityToTimeline({
-                ent: _user,
-                time: _user.when,
-                relationshipType: "REGISTERED_ON"
-              })
+          }
+          _promisify(_realm, 'saveRelationship$', { relationship$: _rel, id: _userId })
+          .then(function (relationship) {
+            return _addEntityToTimeline({
+              ent: _user,
+              time: _user.when,
+              relationshipType: 'REGISTERED_ON'
             })
-            .done(
-              function (result) {
-                next(null, registration)
-              },
-              function (err) {
-                _si.log.error(_actionRole + ' add login to timetree failed.', err)
-                next(err)
-              }
-            )
-          }
-          else {
-            next(null, registration)
-          }
-        },
-        function (err) {
-          return _si.log.error(_actionRole + ' login failed.', err)
+          })
+          .done(
+            function (result) {
+              next(null, registration)
+            },
+            function (err) {
+              _si.log.error(_actionRole + ' add login to timetree failed.', err)
+              next(err)
+            }
+          )
         }
-      )
+        else {
+          next(null, registration)
+        }
+      },
+      function (err) {
+        _si.log.error(_actionRole + ' login failed.', err)
+      }
+    )
   })
 
   _si.add({ role: _actionRole, cmd: 'login' }, function (args, next) {
@@ -179,63 +179,19 @@ _si.ready(function (err, response) {
       function (new_login) {
         if (new_login.ok) {
           var _login = new_login.login
-          var _loginId = _login.id
           var _user = _getEntityWithIdOnly(new_login.user)
           var _rel = {
             relatedNodeLabel: 'login',
-            type: 'HAS_LOGIN',
-            data: {
-              active: _login.active
-            }
+            type: 'ACTIVE_LOGIN',
           }
-          var _old_latest
-          var _new_latest
-          var _next_latest
-          _promisify(_user, 'saveRelationship$', { relationship$: _rel, id: _loginId })
+          // create a relationship to the new login that lets us find it easily
+          _promisify(_user, 'saveRelationship$', { relationship$: _rel, id: _login.id })
           .then( function(saved_relationship) {
             return _addEntityToTimeline({
               ent: _login,
               time: _login.when,
-              relationshipType: "ACTIVE_LOGIN"
+              relationshipType: 'LOGGED_IN_AT'
             })
-          })
-          .then(function (instant) {
-            // get the login currently related as the 'LATEST'
-            return _promisify(_user, 'list$', { relationship$: { relatedNodeLabel: 'login', type: 'LATEST' } })
-          })
-          .then(function (latest) {
-            _old_latest = latest
-            // get the two most recent logins
-            return _promisify(_user, 'list$', { relationship$: { relatedNodeLabel: 'login', type: 'HAS_LOGIN', data: { limit$: 2, sort$: { when: -1 } } } })
-          })
-          .then(function (_most_recent_logins) {
-            if (_most_recent_logins.length > 0) {
-              _new_latest = _most_recent_logins[0]
-              _next_latest = _most_recent_logins[1]
-              // set the latest login as the head of the linked list
-              return _promisify(_user, 'saveRelationship$', { relationship$: { relatedNodeLabel: 'login', type: 'LATEST' }, id: _new_latest.id })
-              .then(function (latest_relationship) {
-                // set the next most recent login to be the next in the list
-                if (_next_latest) {
-                  return _promisify(_new_latest, 'saveRelationship$', { relationship$: { relatedNodeLabel: 'login', type: 'NEXT' }, id: _next_latest.id })
-                }
-                return
-              })
-              .done(
-                function (next_relationship) {
-                  // remove the old latest from the head of the linked list
-                  if (!_.isEmpty(_old_latest)) {
-                    _old_latest.forEach(function (current_old_latest) {
-                      _promisify(_user, 'remove$', { relationship$: { relatedNodeLabel: 'login', type: 'LATEST' }, id: current_old_latest.id })
-                    }) 
-                  }
-                },
-                function (err) {
-                  return _si.log.error(_actionRole + ' updating login linked list failed.', err)
-                } 
-              )
-            }
-            else return
           })
           .done(
             function () {
@@ -243,7 +199,7 @@ _si.ready(function (err, response) {
               next(null, new_login)
             },
             function (err) {
-              return _si.log.error(_actionRole + ' add login to timetree failed.', err)
+              _si.log.error(_actionRole + ' add login to timetree failed.', err)
             }
           )
         }
@@ -252,95 +208,140 @@ _si.ready(function (err, response) {
         }
       },
       function (err) {
-        return _si.log.error(_actionRole + ' login failed.', err)
+        _si.log.error(_actionRole + ' login failed.', err)
       }
     )
   })
 
+  var deactivateLogin = function (login_result) {
+    console.log("deactivating login: " + Util.inspect(login_result))
+    var _deferred = Q.defer()
+    if (login_result.ok) {
+      var _login = login_result.login
+      var _user = _getEntityWithIdOnly(login_result.user)
+      var _old_head
+      // get the login currently at the head of the 'INACTIVE_LOGINS' linked list
+      _promisify(_user, 'list$', { relationship$: { relatedNodeLabel: 'login', type: 'INACTIVE_LOGINS', data: { limit$: 1, sort$: { ended: -1 } } } })
+      .then(function (inactive_logins) {
+        // remove the old latest from the head of the linked list
+        if (!_.isEmpty(inactive_logins)) {
+          _old_head = inactive_logins[0]
+          return _promisify(_user, 'remove$', { relationship$: { relatedNodeLabel: 'login', type: 'INACTIVE_LOGINS' }, id: _old_head.id })
+        }
+      })
+      .then(function () {
+        // remove the ACTIVE_LOGIN relationship from the latest logout
+        return _promisify(_user, 'remove$', { relationship$: { relatedNodeLabel: 'login', type: 'ACTIVE_LOGIN' }, id: _login.id })
+      })
+      .then(function () {
+        // add the latest logout to the head of the list
+        return _promisify(_user, 'saveRelationship$', { relationship$: { relatedNodeLabel: 'login', type: 'INACTIVE_LOGINS' }, id: _login.id } )
+      })
+      .then(function (saved_relationship) {
+        // add the old head as next in the list
+        if (_old_head) {
+          return _promisify(_login, 'saveRelationship$', { relationship$: { relatedNodeLabel: 'login', type: 'NEXT' }, id: _old_head.id })
+        }
+      })
+      .done(
+        function (saved_relationship) {
+          // return the login we just updated...
+          _deferred.resolve(login_result)
+        },
+        function (err) {
+          _si.log.error(_actionRole + ' updating login linked list failed.', err)
+          _deferred.reject(err)
+        }
+      )
+    }
+    else {
+      _deferred.resolve(login_result)
+    }
+    return _deferred.promise
+  }
+
   _si.add({ role: _actionRole, cmd: 'logout' }, function (args, next) {
     console.log("###### logout")
-    // this calls the original action, as provided by the user plugin 
-      this.prior(args,next)
-  })
-
-/*
-
-  _si.add({ role: _actionRole, cmd: 'logout' }, function (args, next) {
-  	console.log("###### logout:: args: " + Util.inspect(args))
-    // this calls the original action, as provided by the user plugin 
-      this.prior(args,next)
-  })
-
-  _si.add({ role: _actionRole, cmd: 'auth' }, function (args, next) {
-  	console.log("###### auth:: args: " + Util.inspect(args))
-    // this calls the original action, as provided by the user plugin 
-      this.prior(args,next)
-  })
-
-  _si.add({ role: _actionRole, cmd: 'create_reset' }, function (args, next) {
-  	console.log("###### create_reset:: args: " + Util.inspect(args))
-    // this calls the original action, as provided by the user plugin 
-      this.prior(args,next)
-  })
-
-  _si.add({ role: _actionRole, cmd: 'load_reset' }, function (args, next) {
-  	console.log("###### load_reset:: args: " + Util.inspect(args))
-    // this calls the original action, as provided by the user plugin 
-      this.prior(args,next)
-  })
-
-  _si.add({ role: _actionRole, cmd: 'execute_reset' }, function (args, next) {
-  	console.log("###### execute_reset:: args: " + Util.inspect(args))
-    // this calls the original action, as provided by the user plugin 
-      this.prior(args,next)
-  })
-
-  _si.add({ role: _actionRole, cmd: 'encrypt_password' }, function (args, next) {
-  	console.log("###### encrypt_password:: args: " + Util.inspect(args))
-    // this calls the original action, as provided by the user plugin 
-      this.prior(args,next)
-  })
-
-  _si.add({ role: _actionRole, cmd: 'verify_password' }, function (args, next) {
-  	console.log("###### verify_password:: args: " + Util.inspect(args))
-    // this calls the original action, as provided by the user plugin 
-      this.prior(args,next)
-  })
-
-  _si.add({ role: _actionRole, cmd: 'update' }, function (args, next) {
-  	console.log("###### update:: args: " + Util.inspect(args))
-    // this calls the original action, as provided by the user plugin 
-      this.prior(args,next)
-  })
-
-  _si.add({ role: _actionRole, cmd: 'remove' }, function (args, next) {
-  	console.log("###### remove:: args: " + Util.inspect(args))
-    // this calls the original action, as provided by the user plugin 
-      this.prior(args,next)
-  })
-
-  _si.add({ role: _actionRole, cmd: 'activate' }, function (args, next) {
-  	console.log("###### activate:: args: " + Util.inspect(args))
-    // this calls the original action, as provided by the user plugin 
-      this.prior(args,next)
+    // this calls the original action, as provided by the user plugin
+    _promisify(this, 'prior', args)
+    .then(function (login_result) {
+      return deactivateLogin(login_result)
+    })
+    .done(
+      function (login_result) {
+        next(null, login_result)
+      },
+      function (err) {
+        _si.log.error(_actionRole + ' login failed.', err)
+      }
+    )
   })
 
   _si.add({ role: _actionRole, cmd: 'deactivate' }, function (args, next) {
-  	console.log("###### deactivate :: args: " + Util.inspect(args))
+  	console.log("###### deactivate")
     // this calls the original action, as provided by the user plugin 
-      this.prior(args,next)
-  })//*/
+    _promisify(this, 'prior', args)
+    .done(
+      function (result) {
+        if (result.ok) {
+          // update the HAS_USER relationship to active: false
+          var _realm = _si.make$('-/sys/realm')
+          _realm.scope = 'UK'
+          var _user = _si.make$('-/sys/user')
+          var _data = {
+            relationship$: { 
+              relatedNodeLabel: 'user',
+              type: 'HAS_USER',
+              data: { active: false }
+            }
+          }
+          if (args.nick) {
+            _data.nick = args.nick
+            _user.nick = args.nick
+          }
+          if (args.email) {
+            _data.email = args.email
+            _user.email = args.email
+          }
+          _promisify(_realm, 'updateRelationship$', _data)
+          .then(function (updated_relationship) {
+            // now get the user
+            return _promisify(_user, 'list$', { limit$: 1 })
+          })
+          .then(function (user_list) {
+            if (!user_list || _.isEmpty(user_list)) {
+              throw new Error("can't find user: " + _user)
+            }
+            _user = user_list[0]
+            // find all active logins for this user
+            return _promisify(_user, 'list$', { relationship$: { relatedNodeLabel: 'login', type: 'ACTIVE_LOGIN' }, sort$: { when: 1 } })
+          })
+          .then(function (active_logins) {
+            var _contexts = []
+            active_logins.forEach(function (current_login) {
+              _contexts.push({ ok: true, login: current_login, user: _user })
+            })
+            // deactivate all the active logins for this user
+            return Q.allSettled(_contexts.map(deactivateLogin))
+          })
+          .done(
+            function (allResults) {
+              next(null, result)
+            },
+            function (err) {
+              _si.log.error(_actionRole + ' update relationship failed.', err)
+            }
+          )
+        }
+        else {
+          next(null, result)
+        }
+      },
+      function (err) {
+        _si.log.error(_actionRole + ' deactivate failed.', err)
+      }
+    )
+  })
 
   _si.listen({ port: _senecaConfig.port, type: _senecaConfig.type, pin: { role: _actionRole } })
 })
-
-var createEntity = function (args) {
-  var _ent = args.ent
-  var _node = _si.make(_ent.zone, _ent.base)
-  var _props = _ent.properties || {}
-  var _keys = _.keys(_props)
-  _keys.forEach(function (key) {
-    _node[key] = _props[key]
-  })
-  return _node
-}
