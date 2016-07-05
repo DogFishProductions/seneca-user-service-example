@@ -1,0 +1,28 @@
+# Version: 0.0.1
+
+FROM risingstack/alpine:3.4-v4.4.4-3.6.1
+
+MAINTAINER Paul Nebel "paul@nebel.io"
+ENV REFRESHED_AT 2016_07_04
+LABEL name="Base image for microservice testing"
+LABEL version="1.0"
+
+# Create "dogfish" user
+RUN adduser -h /home/dogfish -s /bin/ash -D dogfish && \
+    chown -R dogfish /usr/local
+
+# Set up some semblance of an environment
+WORKDIR /home/dogfish
+ENV HOME /home/dogfish
+RUN mkdir /home/dogfish/src
+RUN chown -R dogfish:dogfish /home/dogfish
+
+RUN npm install -g npm \
+    && npm install -g nodemon \
+    && npm config set python /usr/bin/python \
+    && npm cache clear
+
+USER dogfish
+
+WORKDIR /home/dogfish/src
+VOLUME /home/dogfish/src

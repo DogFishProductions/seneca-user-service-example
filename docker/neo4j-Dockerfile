@@ -2,7 +2,7 @@
 
 FROM neo4j:3.0.2
 
-MAINTAINER Paul Nebel "paul.nebel@redjamjar.net"
+MAINTAINER Paul Nebel "paul@nebel.io"
 ENV REFRESHED_AT 2016_05_13
 LABEL name="Base image for neo4j with GraphAware TimeTree"
 LABEL version="1.0"

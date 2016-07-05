@@ -7,33 +7,44 @@
 var _ = require('lodash')
 var Seneca = require('seneca')
 var Fs = require('fs')
-var Util = require('util')
 var Q = require('q')
 
-var _si = Seneca({
-  default_plugins: {
-    'mem-store': false
-  }
-})
+var _si = Seneca()
 
 var _dbConfig
-if (Fs.existsSync(__dirname + '/dbConfig.mine.js')) {
-  _dbConfig = require('./dbConfig.mine')
+if (Fs.existsSync(__dirname + '/config/dbConfig.mine.js')) {
+  _dbConfig = require('./config/dbConfig.mine')
 }
 else {
-  _dbConfig = require('./dbConfig.example')
+  _dbConfig = require('./config/dbConfig.example')
 }
 
 var _senecaConfig
-if (Fs.existsSync(__dirname + '/config.mine.js')) {
-  _senecaConfig = require('./config.mine')
+if (Fs.existsSync(__dirname + '/config/config.mine.js')) {
+  _senecaConfig = require('./config/config.mine')
 }
 else {
-  _senecaConfig = require('./config.example')
+  _senecaConfig = require('./config/config.example')
 }
 
 var _actionRole = _senecaConfig.role
 
+
+_si.use('neo4j-store', _dbConfig).use('user')
+if (_si.version >= '2.0.0') {
+  _si.use(require('seneca-entity'))
+}
+
+/** @function _getEntityWithIdOnly
+ *
+ *  @summary Returns an entity created using the canon of the parameter with just the id set.
+ *
+ *  @since 1.0.0
+ *
+ *  @param    {Object}  ent - The entity on which the result is based.
+ *
+ *  @returns  {Object} The bare bones entity.
+ */
 var _getEntityWithIdOnly = function (ent) {
   var _entity = _si.make$(ent.canon$())
   _entity.id = ent.id
@@ -41,6 +52,21 @@ var _getEntityWithIdOnly = function (ent) {
 }
 
 var _cypherTimelineTemplate = _.template('MATCH (n:<%= nodeName %> { id: "<%= id %>" }) WITH n CALL ga.timetree.events.attach({node: n, resolution: "<%= resolution %>", time: <%= time %>, timezone: "<%= timezone %>", relationshipType: "<%= relationshipType %>"}) YIELD node RETURN node')
+
+/** @function _addEntityToTimeline
+ *
+ *  @summary Adds the entity passed in as a parameter to the database timeline.
+ *
+ *  @since 1.0.0
+ *
+ *  @param    {Object}  options.ent - The entity to be added to the timeline.
+ *  @param    {Date}    options.time - The time to which the entity is to be added.
+ *  @param    {string}  options.resolution - The resolution of the timeline to which the entity is to be added.
+ *  @param    {string}  options.timezone - The timezone to which the entity is to be added.
+ *  @param    {string}  options.relationship - The type of the relationship by which the entity is added to the timeline.
+ *
+ *  @returns  {Object} The promise of a result.
+ */
 var _addEntityToTimeline = function (options) {
   var _deferred = Q.defer()
   var _ent = options.ent
@@ -65,7 +91,7 @@ var _addEntityToTimeline = function (options) {
       })
       _promisify(dbinst, 'query', { cypher: _cypher })
       .done(
-        function (results){
+        function (results) {
           _deferred.resolve(results)
         },
         function (err) {
@@ -81,9 +107,21 @@ var _addEntityToTimeline = function (options) {
   return _deferred.promise
 }
 
+/** @function _promisify
+ *
+ *  @summary Wraps the supplied method invocation in a promise.
+ *
+ *  @since 1.0.0
+ *
+ *  @param    {Object}  context - The object on which the method is to be invoked.
+ *  @param    {string}  action - The name of the method to be invoked.
+ *  @param    {Array}   args - The arguments to be passed to the method invocation.
+ *
+ *  @returns  {Object} The promise of a result.
+ */
 var _promisify = function (context, action, args) {
   var _deferred = Q.defer()
-  context[action](args, function(err, result) {
+  context[action](args, function (err, result) {
     if (err) {
       _deferred.reject(err)
     }
@@ -94,13 +132,10 @@ var _promisify = function (context, action, args) {
   return _deferred.promise
 }
 
-_si.use('entity').use('neo4j-store', _dbConfig).use('user')
-
 _si.ready(function (err, response) {
   if (err) {
     _si.log.error(_actionRole + ' User Service ready error', err)
   }
-
   var _realm = _si.make$('-/sys/realm')
   _realm.scope = 'UK'
   // only create a realm if it doesn't already exist...
@@ -124,16 +159,17 @@ _si.ready(function (err, response) {
   )
 
   _si.add({ role: _actionRole, cmd: 'register' }, function (args, next) {
-    console.log("###### register")
-    // this calls the original action, as provided by the user plugin 
+    // this calls the original action, as provided by the user plugin
     _promisify(this, 'prior', args)
     .done(
       function (registration) {
         var _realmId
         if (_realm) {
           _realmId = _realm.id
-        } 
+        }
         if (registration.ok && _realmId) {
+          // add the user to the realm (the realm to which the user is to be added could be determined by the
+          // sub-domain or the type of the originating URL)
           var _user = registration.user
           var _userId = _user.id
           var _rel = {
@@ -145,6 +181,7 @@ _si.ready(function (err, response) {
           }
           _promisify(_realm, 'saveRelationship$', { relationship$: _rel, id: _userId })
           .then(function (relationship) {
+            // once we've registered the user with the realm, add the registration time to the timeline
             return _addEntityToTimeline({
               ent: _user,
               time: _user.when,
@@ -172,8 +209,7 @@ _si.ready(function (err, response) {
   })
 
   _si.add({ role: _actionRole, cmd: 'login' }, function (args, next) {
-    console.log("###### login")
-    // this calls the original action, as provided by the user plugin 
+    // this calls the original action, as provided by the user plugin
     _promisify(this, 'prior', args)
     .done(
       function (new_login) {
@@ -182,11 +218,11 @@ _si.ready(function (err, response) {
           var _user = _getEntityWithIdOnly(new_login.user)
           var _rel = {
             relatedNodeLabel: 'login',
-            type: 'ACTIVE_LOGIN',
+            type: 'ACTIVE_LOGIN'
           }
           // create a relationship to the new login that lets us find it easily
           _promisify(_user, 'saveRelationship$', { relationship$: _rel, id: _login.id })
-          .then( function(saved_relationship) {
+          .then(function (saved_relationship) {
             return _addEntityToTimeline({
               ent: _login,
               time: _login.when,
@@ -214,7 +250,6 @@ _si.ready(function (err, response) {
   })
 
   var deactivateLogin = function (login_result) {
-    console.log("deactivating login: " + Util.inspect(login_result))
     var _deferred = Q.defer()
     if (login_result.ok) {
       var _login = login_result.login
@@ -235,7 +270,7 @@ _si.ready(function (err, response) {
       })
       .then(function () {
         // add the latest logout to the head of the list
-        return _promisify(_user, 'saveRelationship$', { relationship$: { relatedNodeLabel: 'login', type: 'INACTIVE_LOGINS' }, id: _login.id } )
+        return _promisify(_user, 'saveRelationship$', { relationship$: { relatedNodeLabel: 'login', type: 'INACTIVE_LOGINS' }, id: _login.id })
       })
       .then(function (saved_relationship) {
         // add the old head as next in the list
@@ -261,7 +296,6 @@ _si.ready(function (err, response) {
   }
 
   _si.add({ role: _actionRole, cmd: 'logout' }, function (args, next) {
-    console.log("###### logout")
     // this calls the original action, as provided by the user plugin
     _promisify(this, 'prior', args)
     .then(function (login_result) {
@@ -278,8 +312,7 @@ _si.ready(function (err, response) {
   })
 
   _si.add({ role: _actionRole, cmd: 'deactivate' }, function (args, next) {
-  	console.log("###### deactivate")
-    // this calls the original action, as provided by the user plugin 
+    // this calls the original action, as provided by the user plugin
     _promisify(this, 'prior', args)
     .done(
       function (result) {
@@ -289,7 +322,7 @@ _si.ready(function (err, response) {
           _realm.scope = 'UK'
           var _user = _si.make$('-/sys/user')
           var _data = {
-            relationship$: { 
+            relationship$: {
               relatedNodeLabel: 'user',
               type: 'HAS_USER',
               data: { active: false }

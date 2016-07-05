@@ -5,7 +5,7 @@ module.exports = {
     'url': 'http://neo4j:7474/db/data/transaction/commit',
     'auth': {
       'user': 'neo4j',
-      'pass': 'Paul~J4m'
+      'pass': 'u535s3rv1c3'
     },
     'headers': {
       'accept': 'application/json; charset=UTF-8',
