@@ -7,6 +7,12 @@ ENV REFRESHED_AT 2016_07_04
 LABEL name="Base image for microservice testing"
 LABEL version="1.0"
 
+# Update the image and add required packages
+RUN apk --update upgrade \
+	&& apk add curl ca-certificates \
+	&& mkdir /etc/ssl/certs \
+	&& update-ca-certificates
+
 # Create "dogfish" user
 RUN adduser -h /home/dogfish -s /bin/ash -D dogfish && \
     chown -R dogfish /usr/local

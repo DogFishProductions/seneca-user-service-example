@@ -278,8 +278,17 @@ _si.ready(function (err, response) {
           return _promisify(_login, 'saveRelationship$', { relationship$: { relatedNodeLabel: 'login', type: 'NEXT' }, id: _old_head.id })
         }
       })
+      .then(function (saved_relationship) {
+        // if it's still active, deactivate the current login
+        if (_login.active) {
+          _login.active = false
+          _login.ended = Date.now()
+          return _promisify(_login, 'save$')
+        }
+        return
+      })
       .done(
-        function (saved_relationship) {
+        function (updated_login) {
           // return the login we just updated...
           _deferred.resolve(login_result)
         },
