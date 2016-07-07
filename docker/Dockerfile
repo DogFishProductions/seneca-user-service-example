@@ -32,8 +32,7 @@ USER dogfish
 
 # Clone the repo locally
 RUN git clone https://github.com/DogFishProductions/seneca-user-service-example.git
-RUN mv /home/dogfish/seneca-neo4j-store /home/dogfish/src
-RUN mkdir /home/dogfish/src/coverage
+RUN mv /home/dogfish/seneca-user-service-example /home/dogfish/src
 RUN chown -R dogfish:dogfish /home/dogfish
 
 WORKDIR /home/dogfish/src
