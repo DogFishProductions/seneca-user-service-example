@@ -1,13 +1,12 @@
-client:
+test:
  build: .
- dockerfile: dev-Dockerfile
  links:
-  - server
+  - user
  volumes:
   - $PWD/..:/home/dogfish/src
- command: ash -c "cd /home/dogfish/src && npm install --dev && npm install seneca${SENECA_VER} && nodemon -L --ignore 'test/*.js' ./test/test-client.js"
+ command: ash -c "cd /home/dogfish/src && npm install --dev && npm install seneca${SENECA_VER} && npm test"
 
-server:
+user-dev:
  build: .
  dockerfile: dev-Dockerfile
  links:
@@ -16,12 +15,13 @@ server:
   - $PWD/..:/home/dogfish/src
  command: ash -c "cd /home/dogfish/src && npm install --dev && npm install seneca${SENECA_VER} && nodemon -L --ignore 'test/*.js' ./user-service.js"
 
-test:
+user:
  build: .
  links:
   - neo4j
- user: dogfish
- command: ash -c "cd /home/dogfish/src && npm install --dev && npm install seneca${SENECA_VER} && npm test"
+ volumes:
+  - $PWD/..:/home/dogfish/src
+ command: ash -c "cd /home/dogfish/src && npm install --dev && npm install seneca${SENECA_VER} && node ./user-service.js"
 
 neo4j:
  build: .

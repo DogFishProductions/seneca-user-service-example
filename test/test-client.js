@@ -32,7 +32,7 @@ var login2
 
 // send any role:math patterns out over the network
 // IMPORTANT: must match listening service
-_si.client({ port: 9002, type: 'tcp', pin: { role: 'user' } })
+_si.client({ host: 'user', port: 9002, type: 'tcp', pin: { role: 'user' } })
 
 suite('seneca-user neo4j store tests', function () {
   before({}, function (done) {
