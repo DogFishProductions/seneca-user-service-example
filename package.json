@@ -1,6 +1,6 @@
 {
-  "name": "user-service",
-  "version": "0.0.1",
+  "name": "seneca-user-service-example",
+  "version": "0.0.2",
   "description": "User service using seneca-neo4j-store",
   "main": "user-service.js",
   "license": "MIT",
