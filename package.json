@@ -48,10 +48,10 @@
   "dependencies": {
     "q": "^1.4.1",
     "request": "^2.69.0",
-    "lodash": "~4.11.1",
+    "lodash": "~4.13.1",
     "node-uuid": "^1.4.7",
     "seneca-neo4j-store": "^1.0.x",
-    "seneca-entity": "^0.0.1",
+    "seneca-entity": "^1.0.x",
     "seneca-user": "1.0.2"
   }
 }
