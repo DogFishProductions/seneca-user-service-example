@@ -28,7 +28,8 @@ before_install:
   - sudo mv docker-compose /usr/local/bin
 
 script:
-  - cd /home/dogfish/src/docker
+  - pwd
+  - cd ./docker
   - docker-compose up -d neo4j
   - docker-compose up -d user
   - docker-compose test
