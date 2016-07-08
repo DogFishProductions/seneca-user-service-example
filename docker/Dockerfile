@@ -10,6 +10,7 @@ LABEL version="1.0"
 # Update the image and add required packages
 RUN apk --update upgrade \
 	&& apk add curl ca-certificates \
+	&& mkdir /etc/ssl \
 	&& mkdir /etc/ssl/certs \
 	&& update-ca-certificates
 
