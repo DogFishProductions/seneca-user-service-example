@@ -24,17 +24,17 @@ ENV HOME /home/dogfish
 RUN mkdir /home/dogfish/src
 RUN chown -R dogfish:dogfish /home/dogfish
 
+# Clone the repo locally
+RUN git clone https://github.com/DogFishProductions/seneca-user-service-example.git
+RUN mv /home/dogfish/seneca-user-service-example /home/dogfish/src
+RUN chown -R dogfish:dogfish /home/dogfish
+
 RUN npm install -g npm \
     && npm install -g nodemon \
     && npm config set python /usr/bin/python \
     && npm cache clear
 
 USER dogfish
-
-# Clone the repo locally
-RUN git clone https://github.com/DogFishProductions/seneca-user-service-example.git
-RUN mv /home/dogfish/seneca-user-service-example /home/dogfish/src
-RUN chown -R dogfish:dogfish /home/dogfish
 
 WORKDIR /home/dogfish/src
 VOLUME /home/dogfish/src
