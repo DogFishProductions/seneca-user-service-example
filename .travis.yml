@@ -32,7 +32,7 @@ script:
   - cd ./docker
   - docker-compose up -d neo4j
   - docker-compose up -d user
-  - docker-compose test
+  - docker-compose up test
 
 after_script:
   - docker-compose stop
