@@ -3,7 +3,7 @@
 FROM risingstack/alpine:3.4-v4.4.4-3.6.1
 
 MAINTAINER Paul Nebel "paul@nebel.io"
-ENV REFRESHED_AT 2016_07_04
+ENV REFRESHED_AT 2016_07_23
 LABEL name="Base image for microservice testing"
 LABEL version="1.0"
 
@@ -15,19 +15,18 @@ RUN apk --update upgrade \
 	&& update-ca-certificates
 
 # Create "dogfish" user
-RUN adduser -h /home/dogfish -s /bin/ash -D dogfish && \
-    chown -R dogfish /usr/local
+RUN adduser -G appuser -g "App User" -h /home/dogfish -s /bin/ash -D dogfish \
+    && chown -R dogfish:appuser /usr/local
 
 # Set up some semblance of an environment
 WORKDIR /home/dogfish
 ENV HOME /home/dogfish
 RUN mkdir /home/dogfish/src
-RUN chown -R dogfish:dogfish /home/dogfish
 
 # Clone the repo locally
 RUN git clone https://github.com/DogFishProductions/seneca-user-service-example.git
 RUN mv /home/dogfish/seneca-user-service-example /home/dogfish/src
-RUN chown -R dogfish:dogfish /home/dogfish
+RUN chown -R dogfish:appuser /home/dogfish
 
 RUN npm install -g npm \
     && npm install -g nodemon \

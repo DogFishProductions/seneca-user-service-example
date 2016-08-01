@@ -4,7 +4,7 @@ test:
   - user
  volumes:
   - $PWD/..:/home/dogfish/src
- command: ash -c "cd /home/dogfish/src && npm install --dev && npm install seneca${SENECA_VER} && npm test"
+ command: ash -c "cd /home/dogfish/src && npm install && npm install --only=dev && npm install seneca${SENECA_VER} && npm test"
 
 user-dev:
  build: .
@@ -13,7 +13,7 @@ user-dev:
   - neo4j
  volumes:
   - $PWD/..:/home/dogfish/src
- command: ash -c "cd /home/dogfish/src && npm install --dev && npm install seneca${SENECA_VER} && nodemon -L --ignore 'test/*.js' ./user-service.js"
+ command: ash -c "cd /home/dogfish/src && npm install && npm install --only=dev && npm install seneca${SENECA_VER} && nodemon -L --ignore 'test/*.js' ./user-service.js"
 
 user:
  build: .
@@ -21,7 +21,7 @@ user:
   - neo4j
  volumes:
   - $PWD/..:/home/dogfish/src
- command: ash -c "cd /home/dogfish/src && npm install --dev && npm install seneca${SENECA_VER} && node ./user-service.js"
+ command: ash -c "cd /home/dogfish/src && npm install && npm install --only=dev && npm install seneca${SENECA_VER} && node ./user-service.js"
 
 neo4j:
  build: .
