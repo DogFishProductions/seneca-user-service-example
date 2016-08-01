@@ -8,6 +8,7 @@ LABEL name="Base image for microservice testing"
 LABEL version="1.0"
 
 # Create "dogfish" user
+RUN addgroup appuser
 RUN adduser -G appuser -g "App User" -h /home/dogfish -s /bin/ash -D dogfish \
     && chown -R dogfish:appuser /usr/local
 

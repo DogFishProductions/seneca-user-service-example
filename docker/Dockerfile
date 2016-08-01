@@ -15,6 +15,7 @@ RUN apk --update upgrade \
 	&& update-ca-certificates
 
 # Create "dogfish" user
+RUN addgroup appuser
 RUN adduser -G appuser -g "App User" -h /home/dogfish -s /bin/ash -D dogfish \
     && chown -R dogfish:appuser /usr/local
 
