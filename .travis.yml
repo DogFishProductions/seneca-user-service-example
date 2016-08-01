@@ -31,6 +31,7 @@ script:
   - pwd
   - cd ./docker
   - docker-compose up -d neo4j
+  - docker-compose build
   - docker-compose up -d user
   - docker-compose up test
 
