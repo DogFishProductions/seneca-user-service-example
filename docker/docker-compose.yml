@@ -2,7 +2,7 @@ test:
  build: .
  links:
   - user
- command: ash -c "cd /home/dogfish/src && npm install && npm install --only=dev && npm install seneca${SENECA_VER} && npm test"
+ command: ash -c "cd /home/dogfish/src && npm install seneca${SENECA_VER} && npm install && npm install --only=dev && npm test"
 
 user-dev:
  build: .
@@ -17,7 +17,7 @@ user:
  build: .
  links:
   - neo4j
- command: ash -c "cd /home/dogfish/src && npm install && npm install --only=dev && npm install seneca${SENECA_VER} && node ./user-service.js"
+ command: ash -c "cd /home/dogfish/src && npm install seneca${SENECA_VER} && npm install && npm install --only=dev && node ./user-service.js"
 
 neo4j:
  build: .

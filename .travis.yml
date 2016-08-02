@@ -32,8 +32,8 @@ script:
   - cd ./docker
   - docker-compose up -d neo4j
   - docker-compose build
-  - ls -la /home/dogfish/src
   - docker-compose up -d user
+  - sleep 30
   - docker-compose up test
 
 after_script:
