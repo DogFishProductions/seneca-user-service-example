@@ -22,7 +22,6 @@ RUN adduser -G appuser -g "App User" -h /home/dogfish -s /bin/ash -D dogfish \
 # Set up some semblance of an environment
 WORKDIR /home/dogfish
 ENV HOME /home/dogfish
-RUN mkdir /home/dogfish/src
 
 # Clone the repo locally
 RUN git clone https://github.com/DogFishProductions/seneca-user-service-example.git
