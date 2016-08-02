@@ -32,7 +32,7 @@ script:
   - cd ./docker
   - docker-compose up -d neo4j
   - docker-compose build
-  - ls -la /home/dogfish/src/node_modules
+  - ls -la /home/dogfish/src
   - docker-compose up -d user
   - docker-compose up test
 

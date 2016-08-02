@@ -36,4 +36,3 @@ RUN npm install -g npm \
 USER dogfish
 
 WORKDIR /home/dogfish/src
-VOLUME /home/dogfish/src
